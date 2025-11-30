@@ -1,32 +1,52 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useState, useEffect } from 'react'
 import './App.css'
+// Імпортуємо SDK Телеграму
+import WebApp from '@twa-dev/sdk'
 
 function App() {
-  const [count, setCount] = useState(0)
+  // Створюємо змінну для зберігання посилання
+  const [link, setLink] = useState('');
+
+  // Цей код спрацює один раз при запуску додатка
+  useEffect(() => {
+    // Повідомляємо Телеграму, що додаток готовий
+    WebApp.ready();
+    // Просимо Телеграм розтягнути вікно на весь екран
+    WebApp.expand();
+    
+    // Встановлюємо колір хедера під колір фону (щоб було красиво)
+    WebApp.setHeaderColor(WebApp.themeParams.bg_color || '#212121');
+  }, []);
+
+  const handleDownload = () => {
+    // Якщо посилання порожнє - нічого не робимо
+    if (!link) {
+      WebApp.showAlert("Будь ласка, вставте посилання!");
+      return;
+    }
+    // Поки що просто покажемо алерт, щоб перевірити кнопку
+    WebApp.showAlert(`Спробуємо скачати: ${link}\n(Поки що це тільки тест інтерфейсу)`);
+  };
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
+      <h1>SaveMedia ⬇️</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+        <p>Вставте посилання на відео (TikTok, Instagram, YouTube)</p>
+        
+        <input 
+          type="text" 
+          placeholder="https://..." 
+          value={link}
+          onChange={(e) => setLink(e.target.value)}
+        />
+
+        <button onClick={handleDownload}>
+          Скачати
         </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
+      <p style={{fontSize: '12px', opacity: 0.6, marginTop: '20px'}}>
+        Працює через офіційний Telegram Web App
       </p>
     </>
   )
