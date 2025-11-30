@@ -75,14 +75,23 @@ function App() {
     <>
       <h1>SaveMedia ⬇️</h1>
       <div className="card">
-        <p>Вставте посилання на відео (TikTok, Instagram)</p>
-        
-        <input 
-          type="text" 
-          placeholder="Встав сюди посилання..." 
+        <p>Вставте посилання на відео</p>
+
+        <div className="platforms">
+          <span>✅ TikTok</span>
+          <span>✅ YouTube</span>
+          <span>✅ Instagram</span>
+          <span>✅ Twitter/X</span>
+          <span>✅ Facebook</span>
+          <span>✅ та інші...</span>
+        </div>
+
+        <input
+          type="text"
+          placeholder="Встав сюди посилання..."
           value={link}
           onChange={(e) => setLink(e.target.value)}
-          disabled={isLoading} // Блокуємо інпут під час завантаження
+          disabled={isLoading}
         />
 
         <button onClick={handleDownload} disabled={isLoading} style={{opacity: isLoading ? 0.7 : 1}}>
