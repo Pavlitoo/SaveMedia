@@ -38,9 +38,6 @@ bot.start((ctx) => {
     '• ❌ Відео 18+ не працює\n' +
     '💡 Для Shorts краще використовуй TikTok/Instagram!\n\n' +
     '🚀 Просто відправ посилання!',
-    Markup.keyboard([
-      Markup.button.webApp('📥 Скачати Відео', 'https://save-media-fog3.vercel.app/')
-    ]).resize()
   );
 });
 
