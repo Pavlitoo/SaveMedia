@@ -1,63 +1,535 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.6;
   font-weight: 400;
-
-  /* Кольори, які підлаштовуються під тему Телеграму */
   color-scheme: light dark;
   color: var(--tg-theme-text-color, #ffffff);
-  background-color: var(--tg-theme-bg-color, #212121);
+  background-color: var(--tg-theme-bg-color, #0f0f0f);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
   width: 100%;
-  box-sizing: border-box;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+.app-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+.animate-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 32px;
+  padding: 20px 0;
+}
+
+.icon-container {
+  margin-bottom: 20px;
+}
+
+.download-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  animation: pulse 2s ease-in-out infinite;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.app-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -1px;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: var(--tg-theme-hint-color, #8e8e93);
+  margin: 8px 0 0 0;
 }
 
 .card {
-  padding: 2em;
+  background: var(--tg-theme-secondary-bg-color, #1c1c1e);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.platforms-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.platform-badge {
+  background: var(--tg-theme-bg-color, #0f0f0f);
+  padding: 8px 4px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.platform-badge:hover {
+  transform: translateY(-2px);
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 16px;
 }
 
 input {
   width: 100%;
-  padding: 12px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  border: 1px solid #555;
-  /* Використовуємо змінні Телеграму для фону інпуту */
-  background-color: var(--tg-theme-secondary-bg-color, #333);
+  padding: 16px;
+  padding-right: 40px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background-color: var(--tg-theme-bg-color, #0f0f0f);
   color: var(--tg-theme-text-color, #fff);
-  font-size: 16px;
-  box-sizing: border-box;
+  font-size: 15px;
+  transition: all 0.3s;
+  outline: none;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  /* Використовуємо колір кнопки Телеграму */
-  background-color: var(--tg-theme-button-color, #646cff);
-  color: var(--tg-theme-button-text-color, #ffffff);
+input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+input.loading {
+  opacity: 0.6;
+}
+
+input::placeholder {
+  color: var(--tg-theme-hint-color, #8e8e93);
+}
+
+.clear-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
   cursor: pointer;
-  transition: border-color 0.25s;
-  width: 100%;
+  font-size: 16px;
+  line-height: 1;
+  transition: all 0.2s;
 }
 
-button:hover {
-  opacity: 0.9;
+.clear-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.download-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.download-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(102, 126, 234, 0.5);
+}
+
+.download-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.download-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.download-btn.loading {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b4696 100%);
+}
+
+.btn-icon {
+  font-size: 18px;
+  transition: transform 0.3s;
+}
+
+.download-btn:hover:not(:disabled) .btn-icon {
+  transform: translateX(4px);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--tg-theme-bg-color, #0f0f0f);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.feature-icon {
+  font-size: 20px;
+}
+
+.section-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  text-align: center;
+  color: var(--tg-theme-text-color, #fff);
+}
+
+.info-card {
+  background: var(--tg-theme-secondary-bg-color, #1c1c1e);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.info-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.info-icon {
+  font-size: 28px;
+}
+
+.info-card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.info-card p {
+  color: var(--tg-theme-hint-color, #8e8e93);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.features-list li {
+  padding: 10px 0;
+  padding-left: 28px;
+  position: relative;
+  color: var(--tg-theme-text-color, #fff);
+}
+
+.features-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #667eea;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.platforms-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.platform-category {
+  background: var(--tg-theme-secondary-bg-color, #1c1c1e);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.platform-category h3 {
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.platform-category.warning h3 {
+  color: #ffa500;
+}
+
+.platform-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.platform-item {
+  padding: 12px 16px;
+  background: var(--tg-theme-bg-color, #0f0f0f);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s;
+}
+
+.platform-item:hover {
+  border-color: rgba(102, 126, 234, 0.3);
+  transform: translateX(4px);
+}
+
+.platform-item.success {
+  border-left: 3px solid #34c759;
+}
+
+.platform-item.error {
+  border-left: 3px solid #ff3b30;
+}
+
+.platform-item.info {
+  border-left: 3px solid #007aff;
+}
+
+.platform-description {
+  color: var(--tg-theme-hint-color, #8e8e93);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faq-item {
+  background: var(--tg-theme-secondary-bg-color, #1c1c1e);
+  border-radius: 16px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s;
+}
+
+.faq-item:hover {
+  border-color: rgba(102, 126, 234, 0.3);
+  transform: translateY(-2px);
+}
+
+.faq-question {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--tg-theme-text-color, #fff);
+}
+
+.faq-answer {
+  color: var(--tg-theme-hint-color, #8e8e93);
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.back-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: var(--tg-theme-text-color, #fff);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 24px;
+}
+
+.back-btn:hover {
+  background: var(--tg-theme-secondary-bg-color, #1c1c1e);
+  border-color: #667eea;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: var(--tg-theme-secondary-bg-color, #1c1c1e);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+}
+
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--tg-theme-hint-color, #8e8e93);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+  max-width: 120px;
+}
+
+.nav-btn.active {
+  color: #667eea;
+}
+
+.nav-btn:active {
+  transform: scale(0.95);
+}
+
+.nav-icon {
+  font-size: 22px;
+  transition: transform 0.2s;
+}
+
+.nav-btn.active .nav-icon {
+  transform: scale(1.1);
+}
+
+.nav-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: 16px 12px;
+  }
+
+  .app-title {
+    font-size: 2rem;
+  }
+
+  .platforms-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .platform-badge {
+    font-size: 0.7rem;
+    padding: 6px 2px;
+  }
+
+  .features {
+    grid-template-columns: 1fr;
+  }
+
+  .nav-btn {
+    padding: 8px 8px;
+  }
+
+  .nav-label {
+    font-size: 0.65rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .app-container {
+    padding: 32px 24px;
+  }
+
+  .bottom-nav {
+    max-width: 600px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 20px 20px 0 0;
+  }
 }
