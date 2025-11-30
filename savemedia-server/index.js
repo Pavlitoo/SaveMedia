@@ -1,19 +1,13 @@
+// --- ІМПОРТИ БІБЛІОТЕК ---
+const { Telegraf, Markup } = require('telegraf');
+const express = require('express');
+const cors = require('cors');
+const { cobalt } = require('cobalt-api');
+
 // --- ІНІЦІАЛІЗАЦІЯ ---
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Отримуємо попередні оновлення, щоб очистити очередь
-bot.telegram.getUpdates().then(() => {
-  bot.launch().then(() => {
-    console.log('✅ Бот успішно запущений!');
-    app.listen(PORT, () => {
-      console.log(`✅ Сервер API запущений на порті ${PORT}`);
-    });
-  });
-});
-
-// --- ВИПРАВЛЕННЯ ТУТ: Ми видалили рядок "const cobalt = new CobaltApi();", він не потрібен ---
 
 app.use(cors()); // Дозволяємо запити з твого сайту на Vercel
 app.use(express.json()); // Вчимо сервер розуміти JSON дані
