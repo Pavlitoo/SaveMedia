@@ -25,12 +25,20 @@ app.use(express.json());
 // --- ЛОГІКА БОТА ---
 bot.start((ctx) => {
   ctx.reply(
-    '🎉 SaveMedia Бот - Універсальний завантажувач!\n\n' +
-    '📱 Підтримка:\n' +
-    '✅ TikTok, Instagram, YouTube\n' +
-    '✅ Twitter/X, Facebook, Reddit\n' +
-    '✅ Pinterest, Vimeo, Twitch\n' +
-    '✅ 1000+ інших сайтів!\n\n' +
+    '🎉 SaveMedia - Універсальний завантажувач відео!\n\n' +
+    '📱 **Основні платформи:**\n' +
+    '✅ TikTok (без водяних знаків)\n' +
+    '✅ Instagram (Reels, Posts, Stories)\n' +
+    '✅ YouTube (Videos & Shorts)\n' +
+    '✅ Twitter/X\n' +
+    '✅ Facebook (публічні відео)\n\n' +
+    '🌐 **Також підтримується:**\n' +
+    '• Reddit, Pinterest, Vimeo\n' +
+    '• Twitch, Dailymotion\n' +
+    '• VK, OK.ru, Rutube\n' +
+    '• Streamable, Imgur\n' +
+    '• Bandcamp, SoundCloud\n' +
+    '• та 1000+ інших!\n\n' +
     '🚀 Просто відправ посилання!',
     Markup.keyboard([
       Markup.button.webApp('📥 Скачати Відео', 'https://save-media-fog3.vercel.app/')
@@ -41,25 +49,25 @@ bot.start((ctx) => {
 // --- ФУНКЦІЯ ЗАВАНТАЖЕННЯ ЧЕРЕЗ YT-DLP ---
 async function downloadWithYtDlp(url) {
   const tempDir = '/tmp';
-  const outputTemplate = path.join(tempDir, 'video_%(id)s.%(ext)s');
 
   try {
     console.log('🔍 Починаю завантаження через yt-dlp...');
 
-    // Команда для отримання прямого посилання (без завантаження файлу)
     const ytdlpPath = path.join(__dirname, 'yt-dlp');
-    const command = `${ytdlpPath} --no-warnings --no-playlist --format "best[ext=mp4]/best" --get-url "${url}"`;
+    
+    // Додаємо більше опцій для обходу захисту YouTube
+    const command = `${ytdlpPath} --no-warnings --no-playlist --format "best[height<=720][ext=mp4]/best[ext=mp4]/best" --get-url "${url}" --no-check-certificates --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"`;
 
     const { stdout, stderr } = await execPromise(command, {
-      timeout: 30000, // 30 секунд максимум
-      maxBuffer: 1024 * 1024 * 10 // 10MB буфер
+      timeout: 45000, // 45 секунд для YouTube
+      maxBuffer: 1024 * 1024 * 10
     });
 
     if (stderr && !stdout) {
-      throw new Error('yt-dlp не зміг обробити посилання');
+      throw new Error('Не вдалося обробити відео');
     }
 
-    const videoUrl = stdout.trim().split('\n')[0]; // Беремо перший рядок (пряме посилання)
+    const videoUrl = stdout.trim().split('\n')[0];
 
     if (!videoUrl || !videoUrl.startsWith('http')) {
       throw new Error('Не вдалося отримати пряме посилання');
@@ -70,8 +78,114 @@ async function downloadWithYtDlp(url) {
 
   } catch (error) {
     console.error('❌ Помилка yt-dlp:', error.message);
+    
+    // Якщо це YouTube і є проблема з аутентифікацією - використовуємо альтернативу
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      console.log('🔄 YouTube захист виявлено, використовую альтернативний метод...');
+      return { success: false, error: 'youtube_auth_needed' };
+    }
+    
     return { success: false, error: error.message };
   }
+}
+
+// --- АЛЬТЕРНАТИВНИЙ МЕТОД ДЛЯ YOUTUBE ---
+async function downloadYouTube(url) {
+  // Метод 1: Cobalt API (найкращий для YouTube)
+  try {
+    console.log('🔄 YouTube метод 1: Cobalt...');
+    const response = await fetch('https://api.cobalt.tools/api/json', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url: url,
+        vCodec: 'h264',
+        vQuality: '480',
+        isAudioOnly: false,
+        filenamePattern: 'basic'
+      })
+    });
+
+    const result = await response.json();
+    console.log('Cobalt результат:', result.status);
+    
+    if (result.status === 'redirect' || result.status === 'tunnel') {
+      return { success: true, videoUrl: result.url };
+    }
+  } catch (error) {
+    console.log('YouTube Cobalt помилка:', error.message);
+  }
+
+  // Метод 2: Y2Mate простий
+  try {
+    console.log('🔄 YouTube метод 2: Y2Mate...');
+    const videoId = url.match(/(?:v=|\/)([\w-]{11})/)?.[1];
+    if (!videoId) throw new Error('Невірний ID');
+
+    const searchUrl = `https://www.y2mate.com/mates/analyzeV2/ajax`;
+    const searchResponse = await fetch(searchUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `k_query=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&k_page=home&hl=en&q_auto=0`
+    });
+
+    const searchResult = await searchResponse.json();
+    
+    if (searchResult.status === 'ok' && searchResult.links?.mp4) {
+      const formats = searchResult.links.mp4;
+      const quality = Object.keys(formats).find(q => q.includes('360')) || Object.keys(formats)[0];
+      const format = formats[quality];
+
+      if (format?.k) {
+        const convertUrl = 'https://www.y2mate.com/mates/convertV2/index';
+        const convertResponse = await fetch(convertUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `vid=${videoId}&k=${format.k}`
+        });
+
+        const convertResult = await convertResponse.json();
+        
+        if (convertResult.status === 'ok' && convertResult.dlink) {
+          return { success: true, videoUrl: convertResult.dlink };
+        }
+      }
+    }
+  } catch (error) {
+    console.log('YouTube Y2Mate помилка:', error.message);
+  }
+
+  // Метод 3: SaveFrom
+  try {
+    console.log('🔄 YouTube метод 3: SaveFrom...');
+    const videoId = url.match(/(?:v=|\/)([\w-]{11})/)?.[1];
+    const apiUrl = `https://cdn58.savetube.me/info?url=https://www.youtube.com/watch?v=${videoId}`;
+    
+    const response = await fetch(apiUrl);
+    const result = await response.json();
+
+    if (result.data?.video_formats) {
+      // Шукаємо формат 360p або нижчий
+      const format = result.data.video_formats.find(f => 
+        f.label?.includes('360') || f.label?.includes('240')
+      ) || result.data.video_formats[0];
+
+      if (format?.url) {
+        return { success: true, videoUrl: format.url };
+      }
+    }
+  } catch (error) {
+    console.log('YouTube SaveFrom помилка:', error.message);
+  }
+
+  return { success: false, error: 'YouTube: Всі методи не спрацювали. Це може бути Shorts або вікове обмеження.' };
 }
 
 // --- РЕЗЕРВНИЙ МЕТОД: TIKWM ДЛЯ TIKTOK ---
@@ -93,13 +207,24 @@ async function downloadTikTok(url) {
 
 // --- ГОЛОВНА ФУНКЦІЯ ---
 async function downloadVideo(url) {
-  // Спочатку пробуємо yt-dlp (універсальний)
+  // Якщо це YouTube - одразу використовуємо спеціальні API (не yt-dlp)
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    console.log('🎥 Виявлено YouTube, використовую спеціальні методи...');
+    return await downloadYouTube(url);
+  }
+
+  // Якщо це TikTok - використовуємо TikWM
+  if (url.includes('tiktok')) {
+    console.log('🎵 Виявлено TikTok...');
+    return await downloadTikTok(url);
+  }
+
+  // Для всіх інших - спочатку пробуємо yt-dlp
   let result = await downloadWithYtDlp(url);
 
-  // Якщо не спрацювало і це TikTok - пробуємо резерв
-  if (!result.success && url.includes('tiktok')) {
-    console.log('🔄 Пробую резервний TikTok API...');
-    result = await downloadTikTok(url);
+  // Якщо не спрацювало - повертаємо помилку
+  if (!result.success) {
+    return { success: false, error: 'Не вдалося завантажити з цієї платформи' };
   }
 
   return result;
