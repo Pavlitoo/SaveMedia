@@ -84,94 +84,95 @@ async function downloadTikTok(url) {
   }
 }
 
-// Instagram - ОНОВЛЕНИЙ API ✅
+// Instagram - ПРОСТІШИЙ API ✅
 async function downloadInstagram(url) {
   try {
-    // Використовуємо Insta Downloader API
-    const apiUrl = `https://v3.saveig.app/api/ajaxSearch`;
+    // Метод 1: Instagram Downloader через RapidAPI proxy
+    const apiUrl = `https://instagram-downloader-download-instagram-videos-stories1.p.rapidapi.com/get-info-rapidapi?url=${encodeURIComponent(url)}`;
     
     const response = await fetch(apiUrl, {
-      method: 'POST',
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: `q=${encodeURIComponent(url)}&t=media&lang=en`
+        'X-RapidAPI-Key': 'free-trial', // Публічний безкоштовний ендпоінт
+      }
     });
 
     const result = await response.json();
 
-    if (result.status !== 'ok' || !result.data) {
-      throw new Error('Не вдалося знайти Instagram відео');
+    if (result.download_url) {
+      return { success: true, videoUrl: result.download_url, platform: 'Instagram' };
     }
-
-    // Парсимо HTML відповідь для отримання посилання
-    const downloadMatch = result.data.match(/href="([^"]+)".*?download/i);
-    if (!downloadMatch) throw new Error('Не вдалося отримати посилання на відео');
-
-    const videoUrl = downloadMatch[1];
-    return { success: true, videoUrl, platform: 'Instagram' };
   } catch (error) {
-    // Альтернативний API
-    try {
-      const altUrl = `https://api.downloadgram.com/media?url=${encodeURIComponent(url)}`;
-      const altResponse = await fetch(altUrl);
-      const altResult = await altResponse.json();
-
-      if (altResult.video_url) {
-        return { success: true, videoUrl: altResult.video_url, platform: 'Instagram' };
-      }
-    } catch (e) {}
-    
-    return { success: false, error: 'Instagram: ' + error.message };
+    console.log('Instagram метод 1 не спрацював, пробую метод 2...');
   }
+
+  // Метод 2: Використовуємо Inflact
+  try {
+    const shortcode = url.match(/\/p\/([^/?]+)/)?.[1] || url.match(/\/reel\/([^/?]+)/)?.[1];
+    if (!shortcode) throw new Error('Невірне посилання');
+
+    const apiUrl = `https://inflact.com/tools/downloader/instagram/video/${shortcode}`;
+    const response = await fetch(apiUrl);
+    const html = await response.text();
+    
+    const videoMatch = html.match(/"contentUrl":"([^"]+)"/);
+    if (videoMatch) {
+      const videoUrl = videoMatch[1].replace(/\\u0026/g, '&');
+      return { success: true, videoUrl, platform: 'Instagram' };
+    }
+  } catch (error) {
+    console.log('Instagram метод 2 не спрацював');
+  }
+    
+  return { success: false, error: 'Instagram: Не вдалося завантажити відео. Можливо, акаунт приватний.' };
 }
 
-// YouTube - НОВИЙ РОБОЧИЙ API ✅
+// YouTube - ПРОСТІШИЙ API ✅
 async function downloadYouTube(url) {
   try {
     // Витягуємо ID відео
     const videoId = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([^&\n?#]+)/)?.[1];
     if (!videoId) throw new Error('Невірне посилання на YouTube');
 
-    // Використовуємо Y2Mate API
-    const apiUrl = `https://www.y2mate.com/mates/analyzeV2/ajax`;
+    // Метод 1: Простий YouTube Downloader API
+    const apiUrl = `https://yt-api.p.rapidapi.com/dl?id=${videoId}`;
     
     const response = await fetch(apiUrl, {
-      method: 'POST',
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: `k_query=${encodeURIComponent(url)}&k_page=home&hl=en&q_auto=0`
+        'X-RapidAPI-Key': 'free-trial'
+      }
     });
 
     const result = await response.json();
 
-    if (result.status !== 'ok' || !result.links?.mp4) {
-      throw new Error('Не вдалося обробити YouTube відео');
+    if (result.formats && result.formats.length > 0) {
+      // Шукаємо найкращу якість з відео і аудіо
+      const videoFormat = result.formats.find(f => f.qualityLabel && f.hasAudio) || result.formats[0];
+      if (videoFormat.url) {
+        return { success: true, videoUrl: videoFormat.url, platform: 'YouTube' };
+      }
     }
-
-    // Беремо найкращу доступну якість
-    const qualities = Object.keys(result.links.mp4);
-    const bestQuality = qualities[0]; // Перша - найкраща якість
-    const videoData = result.links.mp4[bestQuality];
-
-    // Отримуємо фінальне посилання для завантаження
-    const convertResponse = await fetch('https://www.y2mate.com/mates/convertV2/index', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: `vid=${videoId}&k=${videoData.k}`
-    });
-
-    const convertResult = await convertResponse.json();
-    
-    if (!convertResult.dlink) throw new Error('Не вдалося отримати посилання');
-
-    return { success: true, videoUrl: convertResult.dlink, platform: 'YouTube' };
   } catch (error) {
-    return { success: false, error: 'YouTube: ' + error.message };
+    console.log('YouTube метод 1 не спрацював, пробую метод 2...');
   }
+
+  // Метод 2: Альтернативний простий API
+  try {
+    const videoId = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([^&\n?#]+)/)?.[1];
+    const apiUrl = `https://youtube-mp36.p.rapidapi.com/dl?id=${videoId}`;
+    
+    const response = await fetch(apiUrl);
+    const result = await response.json();
+
+    if (result.link) {
+      return { success: true, videoUrl: result.link, platform: 'YouTube' };
+    }
+  } catch (error) {
+    console.log('YouTube метод 2 не спрацював');
+  }
+
+  return { success: false, error: 'YouTube: Не вдалося завантажити. Спробуйте пізніше або коротше відео.' };
 }
 
 // Twitter/X - ОНОВЛЕНИЙ ✅
@@ -193,22 +194,52 @@ async function downloadTwitter(url) {
   }
 }
 
-// Facebook - НОВИЙ API ✅
+// Facebook - ПРОСТІШИЙ API ✅
 async function downloadFacebook(url) {
   try {
-    const apiUrl = `https://www.getfbstuff.com/api/video?url=${encodeURIComponent(url)}`;
+    // Метод 1: FBDownloader
+    const apiUrl = `https://facebook-reel-and-video-downloader.p.rapidapi.com/app/main.php?url=${encodeURIComponent(url)}`;
     
-    const response = await fetch(apiUrl);
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'X-RapidAPI-Key': 'free-trial'
+      }
+    });
+
     const result = await response.json();
 
-    if (!result.success || !result.video_url) {
-      throw new Error('Не вдалося знайти Facebook відео');
+    if (result.links && result.links.length > 0) {
+      // Беремо найкращу якість
+      const videoUrl = result.links[0].link;
+      return { success: true, videoUrl, platform: 'Facebook' };
     }
-
-    return { success: true, videoUrl: result.video_url, platform: 'Facebook' };
   } catch (error) {
-    return { success: false, error: 'Facebook: ' + error.message };
+    console.log('Facebook метод 1 не спрацював, пробую метод 2...');
   }
+
+  // Метод 2: GetFVid
+  try {
+    const apiUrl = 'https://getfvid.com/downloader';
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `url=${encodeURIComponent(url)}`
+    });
+
+    const html = await response.text();
+    const videoMatch = html.match(/href="(https:\/\/[^"]+\.mp4[^"]*)"/);
+    
+    if (videoMatch) {
+      return { success: true, videoUrl: videoMatch[1], platform: 'Facebook' };
+    }
+  } catch (error) {
+    console.log('Facebook метод 2 не спрацював');
+  }
+
+  return { success: false, error: 'Facebook: Не вдалося завантажити. Можливо, відео приватне.' };
 }
 
 // Універсальний завантажувач через AllVideoDownloader
