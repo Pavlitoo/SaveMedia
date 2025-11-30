@@ -2,7 +2,14 @@
 const { Telegraf, Markup } = require('telegraf');
 const express = require('express');
 const cors = require('cors');
-const { cobalt } = require('cobalt-api');
+
+// --- ПЕРЕВІРКА ТОКЕНА ---
+if (!process.env.BOT_TOKEN) {
+  console.error('❌ ПОМИЛКА: Відсутній BOT_TOKEN в змінних середовища!');
+  process.exit(1);
+}
+
+console.log('✅ BOT_TOKEN знайдено');
 
 // --- ІНІЦІАЛІЗАЦІЯ ---
 const bot = new Telegraf(process.env.BOT_TOKEN);
@@ -43,14 +50,24 @@ app.post('/download', async (req, res) => {
     // 1. Повідомляємо юзеру в чат, що процес пішов
     await bot.telegram.sendMessage(chatId, '🔍 Шукаю відео, зачекайте секундочку...');
 
-    // 2. Використовуємо бібліотеку cobalt для отримання прямого посилання
-    // Вона сама визначить, що це за соцмережа (TikTok, Insta і т.д.)
-    const result = await cobalt.generate(url);
+    // 2. Використовуємо Cobalt API напряму через fetch
+    const cobaltResponse = await fetch('https://api.cobalt.tools/api/json', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url: url,
+        videoQuality: '1080'
+      })
+    });
 
+    const result = await cobaltResponse.json();
     console.log('✅ Результат від cobalt:', result.status);
 
     // Перевіряємо, чи успішно все пройшло
-    if (!result || (result.status !== 'success' && result.status !== 'stream')) {
+    if (!result || (result.status !== 'redirect' && result.status !== 'stream')) {
          throw new Error(result.text || 'Не вдалося знайти відео за цим посиланням. Можливо, профіль закритий.');
     }
     
@@ -88,14 +105,31 @@ app.get('/', (_, res) => res.send('Сервер SaveMedia працює і гот
 
 // --- ЗАПУСК ---
 
-// Спочатку запускаємо бота
-bot.launch().then(() => {
-    console.log('✅ Бот успішно запущений в Телеграмі!');
-    // Потім запускаємо сервер API
-    app.listen(PORT, () => {
-        console.log(`✅ Сервер API запущений на порті ${PORT}`);
-    });
+// Обробка помилок при запуску
+process.on('uncaughtException', (error) => {
+  console.error('❌ Необроблена помилка:', error);
+  process.exit(1);
 });
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Необроблене відхилення промісу:', reason);
+  process.exit(1);
+});
+
+// Спочатку запускаємо сервер API
+app.listen(PORT, () => {
+    console.log(`✅ Сервер API запущений на порті ${PORT}`);
+});
+
+// Потім запускаємо бота
+bot.launch()
+  .then(() => {
+    console.log('✅ Бот успішно запущений в Телеграмі!');
+  })
+  .catch((error) => {
+    console.error('❌ Помилка при запуску бота:', error);
+    process.exit(1);
+  });
 
 // Чемне завершення роботи
 process.once('SIGINT', () => bot.stop('SIGINT'));
