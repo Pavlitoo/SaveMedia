@@ -50,8 +50,8 @@ app.post('/download', async (req, res) => {
     // 1. Повідомляємо юзеру в чат, що процес пішов
     await bot.telegram.sendMessage(chatId, '🔍 Шукаю відео, зачекайте секундочку...');
 
-    // 2. Використовуємо Cobalt API напряму через fetch
-    const cobaltResponse = await fetch('https://api.cobalt.tools/api/json', {
+    // 2. Використовуємо новий Cobalt API v9
+    const cobaltResponse = await fetch('https://co.wuk.sh/api/json', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -59,19 +59,27 @@ app.post('/download', async (req, res) => {
       },
       body: JSON.stringify({
         url: url,
-        videoQuality: '1080'
+        videoQuality: '1080',
+        filenameStyle: 'basic',
+        downloadMode: 'auto'
       })
     });
 
     const result = await cobaltResponse.json();
-    console.log('✅ Результат від cobalt:', result.status);
+    console.log('✅ Результат від cobalt:', result);
 
     // Перевіряємо, чи успішно все пройшло
-    if (!result || (result.status !== 'redirect' && result.status !== 'stream')) {
+    if (!result || result.status === 'error') {
          throw new Error(result.text || 'Не вдалося знайти відео за цим посиланням. Можливо, профіль закритий.');
     }
     
+    // У новому API відео може бути в result.url
     const videoUrl = result.url;
+    
+    if (!videoUrl) {
+      throw new Error('Не вдалося отримати пряме посилання на відео');
+    }
+    
     console.log(`📹 Пряме посилання на відео отримано!`);
     
     // 3. Відправляємо відео в Телеграм
