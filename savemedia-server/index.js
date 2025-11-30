@@ -50,31 +50,21 @@ app.post('/download', async (req, res) => {
     // 1. Повідомляємо юзеру в чат, що процес пішов
     await bot.telegram.sendMessage(chatId, '🔍 Шукаю відео, зачекайте секундочку...');
 
-    // 2. Використовуємо новий Cobalt API v9
-    const cobaltResponse = await fetch('https://co.wuk.sh/api/json', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        url: url,
-        videoQuality: '1080',
-        filenameStyle: 'basic',
-        downloadMode: 'auto'
-      })
-    });
-
-    const result = await cobaltResponse.json();
-    console.log('✅ Результат від cobalt:', result);
+    // 2. Використовуємо TikWM API (безкоштовний, без ключів)
+    const apiUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}&hd=1`;
+    
+    const response = await fetch(apiUrl);
+    const result = await response.json();
+    
+    console.log('✅ Результат від TikWM:', result);
 
     // Перевіряємо, чи успішно все пройшло
-    if (!result || result.status === 'error') {
-         throw new Error(result.text || 'Не вдалося знайти відео за цим посиланням. Можливо, профіль закритий.');
+    if (result.code !== 0 || !result.data) {
+      throw new Error('Не вдалося знайти відео за цим посиланням. Можливо, профіль закритий або відео видалено.');
     }
     
-    // У новому API відео може бути в result.url
-    const videoUrl = result.url;
+    // Отримуємо пряме посилання на відео (HD якщо є, інакше звичайне)
+    const videoUrl = result.data.hdplay || result.data.play;
     
     if (!videoUrl) {
       throw new Error('Не вдалося отримати пряме посилання на відео');
