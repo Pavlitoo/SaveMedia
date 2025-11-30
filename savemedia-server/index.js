@@ -1,15 +1,12 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const { Telegraf, Markup } = require('telegraf');
-// --- ВИПРАВЛЕННЯ ТУТ: Імпортуємо бібліотеку правильно ---
-const cobalt = require("cobalt-api");
-
-// --- ПЕРЕВІРКИ ---
-if (!process.env.BOT_TOKEN) {
-  console.error('❌ ПОМИЛКА: Токен бота відсутній у файлі .env або на сервері Render!');
-  process.exit(1);
-}
+// Отримуємо попередні оновлення, щоб очистити очередь
+bot.telegram.getUpdates().then(() => {
+  bot.launch().then(() => {
+    console.log('✅ Бот успішно запущений!');
+    app.listen(PORT, () => {
+      console.log(`✅ Сервер API запущений на порті ${PORT}`);
+    });
+  });
+});
 
 // --- ІНІЦІАЛІЗАЦІЯ ---
 const bot = new Telegraf(process.env.BOT_TOKEN);
