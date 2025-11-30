@@ -31,7 +31,7 @@ function App() {
       return;
     }
     // Перевірка, чи ти не забув вставити посилання
-    if (!BACKEND_URL || BACKEND_URL.includes("ВСТАВ_СЮДИ")) {
+    if (!BACKEND_URL || BACKEND_URL.includes("https://savemedia-server.onrender.com")) {
       tg.showAlert("🔴 ПОМИЛКА В КОДІ:\nТи забув вставити посилання на сервер Render у файлі App.jsx!");
       return;
     }
