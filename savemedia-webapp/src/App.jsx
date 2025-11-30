@@ -20,9 +20,15 @@ function App() {
       tg.ready();
       tg.expand();
       // Безпечне встановлення кольору
-      tg.setHeaderColor(tg.themeParams?.bg_color || '#212121');
+      try {
+        if (tg.themeParams && tg.themeParams.bg_color) {
+          tg.setHeaderColor(tg.themeParams.bg_color);
+        }
+      } catch (error) {
+        console.log('Could not set header color:', error);
+      }
     }
-  }, []);
+  }, [tg]);
 
   const handleDownload = async () => {
     // 1. Перевірки
