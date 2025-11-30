@@ -10,12 +10,34 @@ function App() {
   // Цей код спрацює один раз при запуску додатка
   useEffect(() => {
     // Повідомляємо Телеграму, що додаток готовий
-    WebApp.ready();
+    if (WebApp && typeof WebApp.ready === 'function') {
+      try {
+        WebApp.ready();
+      } catch (e) {
+        console.warn('WebApp.ready() failed:', e);
+      }
+    }
+
     // Просимо Телеграм розтягнути вікно на весь екран
-    WebApp.expand();
+    if (WebApp && typeof WebApp.expand === 'function') {
+      try {
+        WebApp.expand();
+      } catch (e) {
+        console.warn('WebApp.expand() failed:', e);
+      }
+    }
     
     // Встановлюємо колір хедера під колір фону (щоб було красиво)
-    WebApp.setHeaderColor(WebApp.themeParams.bg_color || '#212121');
+    const bgColor = WebApp && WebApp.themeParams && WebApp.themeParams.bg_color
+      ? WebApp.themeParams.bg_color
+      : '#212121';
+    if (WebApp && typeof WebApp.setHeaderColor === 'function') {
+      try {
+        WebApp.setHeaderColor(bgColor);
+      } catch (e) {
+        console.warn('WebApp.setHeaderColor() failed:', e);
+      }
+    }
   }, []);
 
   const handleDownload = () => {
