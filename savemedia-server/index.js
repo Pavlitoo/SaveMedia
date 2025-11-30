@@ -25,20 +25,12 @@ app.use(express.json());
 // --- ЛОГІКА БОТА ---
 bot.start((ctx) => {
   ctx.reply(
-    '🎉 SaveMedia - Універсальний завантажувач відео!\n\n' +
-    '📱 **Основні платформи:**\n' +
-    '✅ TikTok (без водяних знаків)\n' +
-    '✅ Instagram (Reels, Posts, Stories)\n' +
-    '✅ YouTube (Videos & Shorts)\n' +
-    '✅ Twitter/X\n' +
-    '✅ Facebook (публічні відео)\n\n' +
-    '🌐 **Також підтримується:**\n' +
-    '• Reddit, Pinterest, Vimeo\n' +
-    '• Twitch, Dailymotion\n' +
-    '• VK, OK.ru, Rutube\n' +
-    '• Streamable, Imgur\n' +
-    '• Bandcamp, SoundCloud\n' +
-    '• та 1000+ інших!\n\n' +
+    '🎉 SaveMedia Бот - Універсальний завантажувач!\n\n' +
+    '📱 Підтримка:\n' +
+    '✅ TikTok, Instagram, YouTube\n' +
+    '✅ Twitter/X, Facebook, Reddit\n' +
+    '✅ Pinterest, Vimeo, Twitch\n' +
+    '✅ 1000+ інших сайтів!\n\n' +
     '🚀 Просто відправ посилання!',
     Markup.keyboard([
       Markup.button.webApp('📥 Скачати Відео', 'https://save-media-fog3.vercel.app/')
@@ -49,25 +41,25 @@ bot.start((ctx) => {
 // --- ФУНКЦІЯ ЗАВАНТАЖЕННЯ ЧЕРЕЗ YT-DLP ---
 async function downloadWithYtDlp(url) {
   const tempDir = '/tmp';
+  const outputTemplate = path.join(tempDir, 'video_%(id)s.%(ext)s');
 
   try {
     console.log('🔍 Починаю завантаження через yt-dlp...');
 
+    // Команда для отримання прямого посилання (без завантаження файлу)
     const ytdlpPath = path.join(__dirname, 'yt-dlp');
-    
-    // Додаємо більше опцій для обходу захисту YouTube
-    const command = `${ytdlpPath} --no-warnings --no-playlist --format "best[height<=720][ext=mp4]/best[ext=mp4]/best" --get-url "${url}" --no-check-certificates --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"`;
+    const command = `${ytdlpPath} --no-warnings --no-playlist --format "best[ext=mp4]/best" --get-url "${url}"`;
 
     const { stdout, stderr } = await execPromise(command, {
-      timeout: 45000, // 45 секунд для YouTube
-      maxBuffer: 1024 * 1024 * 10
+      timeout: 30000, // 30 секунд максимум
+      maxBuffer: 1024 * 1024 * 10 // 10MB буфер
     });
 
     if (stderr && !stdout) {
-      throw new Error('Не вдалося обробити відео');
+      throw new Error('yt-dlp не зміг обробити посилання');
     }
 
-    const videoUrl = stdout.trim().split('\n')[0];
+    const videoUrl = stdout.trim().split('\n')[0]; // Беремо перший рядок (пряме посилання)
 
     if (!videoUrl || !videoUrl.startsWith('http')) {
       throw new Error('Не вдалося отримати пряме посилання');
@@ -78,79 +70,8 @@ async function downloadWithYtDlp(url) {
 
   } catch (error) {
     console.error('❌ Помилка yt-dlp:', error.message);
-    
-    // Якщо це YouTube і є проблема з аутентифікацією - використовуємо альтернативу
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-      console.log('🔄 YouTube захист виявлено, використовую альтернативний метод...');
-      return { success: false, error: 'youtube_auth_needed' };
-    }
-    
     return { success: false, error: error.message };
   }
-}
-
-// --- АЛЬТЕРНАТИВНИЙ МЕТОД ДЛЯ YOUTUBE ---
-async function downloadYouTube(url) {
-  try {
-    const videoId = url.match(/(?:v=|\/)([\w-]{11})/)?.[1];
-    if (!videoId) throw new Error('Невірне посилання');
-
-    // Використовуємо простий YouTube API без аутентифікації
-    const apiUrl = `https://yt1s.io/api/ajaxSearch`;
-    
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: `q=${encodeURIComponent(url)}&vt=mp4`
-    });
-
-    const result = await response.json();
-
-    if (result.status === 'ok' && result.links?.mp4) {
-      const qualities = Object.keys(result.links.mp4);
-      const quality = qualities.find(q => q.includes('360') || q.includes('480')) || qualities[0];
-      
-      if (result.links.mp4[quality]) {
-        const convertUrl = result.links.mp4[quality].k;
-        
-        // Отримуємо фінальне посилання
-        const convertResponse = await fetch('https://yt1s.io/api/ajaxConvert', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: `vid=${videoId}&k=${convertUrl}`
-        });
-
-        const convertResult = await convertResponse.json();
-        
-        if (convertResult.status === 'ok' && convertResult.dlink) {
-          return { success: true, videoUrl: convertResult.dlink };
-        }
-      }
-    }
-  } catch (error) {
-    console.log('YouTube альтернатива 1 не спрацювала');
-  }
-
-  // Альтернатива 2: Loader.to
-  try {
-    const videoId = url.match(/(?:v=|\/)([\w-]{11})/)?.[1];
-    const apiUrl = `https://loader.to/ajax/download.php?format=360&url=https://www.youtube.com/watch?v=${videoId}`;
-    
-    const response = await fetch(apiUrl);
-    const result = await response.json();
-
-    if (result.success && result.download_url) {
-      return { success: true, videoUrl: result.download_url };
-    }
-  } catch (error) {
-    console.log('YouTube альтернатива 2 не спрацювала');
-  }
-
-  return { success: false };
 }
 
 // --- РЕЗЕРВНИЙ МЕТОД: TIKWM ДЛЯ TIKTOK ---
@@ -174,12 +95,6 @@ async function downloadTikTok(url) {
 async function downloadVideo(url) {
   // Спочатку пробуємо yt-dlp (універсальний)
   let result = await downloadWithYtDlp(url);
-
-  // Якщо YouTube потребує аутентифікації - використовуємо альтернативу
-  if (!result.success && result.error === 'youtube_auth_needed') {
-    console.log('🔄 Використовую спеціальний YouTube API...');
-    result = await downloadYouTube(url);
-  }
 
   // Якщо не спрацювало і це TikTok - пробуємо резерв
   if (!result.success && url.includes('tiktok')) {
