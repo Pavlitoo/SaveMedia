@@ -1,3 +1,8 @@
+// --- ІНІЦІАЛІЗАЦІЯ ---
+const bot = new Telegraf(process.env.BOT_TOKEN);
+const app = express();
+const PORT = process.env.PORT || 3000;
+
 // Отримуємо попередні оновлення, щоб очистити очередь
 bot.telegram.getUpdates().then(() => {
   bot.launch().then(() => {
@@ -7,11 +12,6 @@ bot.telegram.getUpdates().then(() => {
     });
   });
 });
-
-// --- ІНІЦІАЛІЗАЦІЯ ---
-const bot = new Telegraf(process.env.BOT_TOKEN);
-const app = express();
-const PORT = process.env.PORT || 3000;
 
 // --- ВИПРАВЛЕННЯ ТУТ: Ми видалили рядок "const cobalt = new CobaltApi();", він не потрібен ---
 
@@ -90,7 +90,7 @@ app.post('/download', async (req, res) => {
 
 
 // Проста перевірка, чи сервер живий (для браузера)
-app.get('/', (req, res) => res.send('Сервер SaveMedia працює і готовий качати! 🤖'));
+app.get('/', (_, res) => res.send('Сервер SaveMedia працює і готовий качати! 🤖'));
 
 // --- ЗАПУСК ---
 
