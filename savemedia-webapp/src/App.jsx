@@ -10,19 +10,17 @@ const BACKEND_URL = "https://savemedia-server.onrender.com";
 
 function App() {
   const [link, setLink] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // Стан для анімації завантаження
-  
-  // Використовуємо надійний спосіб доступу до Телеграму
-  const tg = window.Telegram.WebApp;
+  const [isLoading, setIsLoading] = useState(false);
+
+  const tg = window.Telegram?.WebApp;
 
   useEffect(() => {
     if (tg) {
-      tg.ready();
-      tg.expand();
-      // Безпечне встановлення кольору
+      tg.ready?.();
+      tg.expand?.();
       try {
-        if (tg.themeParams && tg.themeParams.bg_color) {
-          tg.setHeaderColor(tg.themeParams.bg_color);
+        if (tg.themeParams?.bg_color) {
+          tg.setHeaderColor?.(tg.themeParams.bg_color);
         }
       } catch (error) {
         console.log('Could not set header color:', error);
@@ -31,56 +29,45 @@ function App() {
   }, [tg]);
 
   const handleDownload = async () => {
-    // 1. Перевірки
     if (!link) {
-      tg.showAlert("Будь ласка, вставте посилання!");
+      tg?.showAlert?.("Будь ласка, вставте посилання!");
       return;
     }
-    // Перевірка, чи ти не забув вставити посилання
+
     if (!BACKEND_URL || BACKEND_URL.includes("ВСТАВ_СЮДИ")) {
-      tg.showAlert("🔴 ПОМИЛКА В КОДІ:\nТи забув вставити посилання на сервер Render у файлі App.jsx!");
+      tg?.showAlert?.("ПОМИЛКА В КОДІ:\nТи забув вставити посилання на сервер!");
       return;
     }
 
-    // Отримуємо ID користувача, щоб знати, куди кидати відео
-    const userId = tg.initDataUnsafe?.user?.id;
+    const userId = tg?.initDataUnsafe?.user?.id;
     if (!userId) {
-       tg.showAlert("Помилка: Не вдалося отримати ваш ID. Відкрийте бот з офіційного клієнта Телеграм.");
-       return;
+      tg?.showAlert?.("Помилка: Не вдалося отримати ваш ID. Відкрийте бот з офіційного клієнта Телеграм.");
+      return;
     }
 
-    // 2. Починаємо процес
-    setIsLoading(true); // Вмикаємо крутілку на кнопці
-    if (tg.MainButton) { tg.MainButton.showProgress(); } // Показуємо прогрес в Телеграмі, якщо доступно
+    setIsLoading(true);
+    tg?.MainButton?.showProgress?.();
 
     try {
-      // 3. Відправляємо запит на наш сервер Render
       const response = await fetch(`${BACKEND_URL}/download`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Відправляємо посилання і ID юзера
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: link, chatId: userId }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        // Якщо все ок, закриваємо вікно, відео вже летить у чат
-        tg.close();
+        tg?.close?.();
       } else {
-        // Якщо помилка на сервері
-        tg.showAlert(`Помилка від сервера: ${data.message || 'Щось пішло не так'}`);
+        tg?.showAlert?.(`Помилка: ${data.message || 'Щось пішло не так'}`);
       }
-
     } catch (error) {
       console.error(error);
-      tg.showAlert("Помилка з'єднання з сервером.\nМожливо, сервер на Render ще спить (почекайте 30 сек) або у вас проблеми з інтернетом.");
+      tg?.showAlert?.("Помилка з'єднання з сервером.");
     } finally {
-      // 4. Завершуємо процес
-      setIsLoading(false); // Вимикаємо крутілку
-      if (tg.MainButton) { tg.MainButton.hideProgress(); } // Ховаємо прогрес в Телеграмі
+      setIsLoading(false);
+      tg?.MainButton?.hideProgress?.();
     }
   };
 
