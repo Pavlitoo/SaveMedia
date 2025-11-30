@@ -25,24 +25,43 @@ app.use(express.json());
 // --- ЛОГІКА БОТА ---
 bot.start((ctx) => {
   ctx.reply(
-    '🎉 SaveMedia - Універсальний завантажувач відео!\n\n' +
-    '📱 **Основні платформи:**\n' +
-    '✅ TikTok (без водяних знаків)\n' +
-    '✅ Instagram (Reels, Posts, Stories)\n' +
-    '✅ YouTube (Videos & Shorts)\n' +
-    '✅ Twitter/X\n' +
-    '✅ Facebook (публічні відео)\n\n' +
-    '🌐 **Також підтримується:**\n' +
+    '🎉 SaveMedia - Універсальний завантажувач!\n\n' +
+    '✅ **ПРАЦЮЄ ЧУДОВО:**\n' +
+    '• TikTok (без водяних знаків)\n' +
+    '• Instagram (Reels, Posts, Stories)\n' +
+    '• Twitter/X, Facebook\n' +
     '• Reddit, Pinterest, Vimeo\n' +
-    '• Twitch, Dailymotion\n' +
-    '• VK, OK.ru, Rutube\n' +
-    '• Streamable, Imgur\n' +
-    '• Bandcamp, SoundCloud\n' +
     '• та 1000+ інших!\n\n' +
+    '⚠️ **YOUTUBE (обмежено):**\n' +
+    '• ✅ Короткі відео (2-10 хв)\n' +
+    '• ❌ Shorts не працює\n' +
+    '• ❌ Відео 18+ не працює\n' +
+    '💡 Для Shorts краще використовуй TikTok/Instagram!\n\n' +
     '🚀 Просто відправ посилання!',
     Markup.keyboard([
       Markup.button.webApp('📥 Скачати Відео', 'https://save-media-fog3.vercel.app/')
     ]).resize()
+  );
+});
+
+bot.help((ctx) => {
+  ctx.reply(
+    '📖 **Інструкція:**\n\n' +
+    '1️⃣ Натисни "📥 Скачати Відео"\n' +
+    '2️⃣ Вставь посилання\n' +
+    '3️⃣ Чекай 5-30 сек\n\n' +
+    '✅ **Що працює на 100%:**\n' +
+    '• TikTok\n' +
+    '• Instagram Reels/Posts\n' +
+    '• Twitter/X\n' +
+    '• Facebook (публічні)\n' +
+    '• Reddit, Vimeo, Pinterest\n\n' +
+    '⚠️ **YouTube обмеження:**\n' +
+    '• Працює тільки зі звичайними відео\n' +
+    '• Shorts НЕ підтримуються\n' +
+    '• Відео 18+ НЕ працюють\n' +
+    '• Краще відео до 10 хв\n\n' +
+    '💡 Замість YouTube Shorts використовуй TikTok або Instagram Reels - там працює ідеально!'
   );
 });
 
@@ -91,69 +110,66 @@ async function downloadWithYtDlp(url) {
 
 // --- АЛЬТЕРНАТИВНИЙ МЕТОД ДЛЯ YOUTUBE ---
 async function downloadYouTube(url) {
-  // Метод 1: Cobalt API (найкращий для YouTube)
-  try {
-    console.log('🔄 YouTube метод 1: Cobalt...');
-    const response = await fetch('https://api.cobalt.tools/api/json', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        url: url,
-        vCodec: 'h264',
-        vQuality: '480',
-        isAudioOnly: false,
-        filenamePattern: 'basic'
-      })
-    });
-
-    const result = await response.json();
-    console.log('Cobalt результат:', result.status);
-    
-    if (result.status === 'redirect' || result.status === 'tunnel') {
-      return { success: true, videoUrl: result.url };
-    }
-  } catch (error) {
-    console.log('YouTube Cobalt помилка:', error.message);
+  // Перевіряємо чи це Shorts
+  if (url.includes('/shorts/')) {
+    return { 
+      success: false, 
+      error: '❌ YouTube Shorts не підтримуються через обмеження API.\n\n💡 Спробуй:\n• Звичайне YouTube відео (не Shorts)\n• TikTok, Instagram Reels замість Shorts' 
+    };
   }
 
-  // Метод 2: Y2Mate простий
+  // Метод 1: Простий і швидкий SaveTube
   try {
-    console.log('🔄 YouTube метод 2: Y2Mate...');
+    console.log('🔄 YouTube метод 1: SaveTube...');
     const videoId = url.match(/(?:v=|\/)([\w-]{11})/)?.[1];
     if (!videoId) throw new Error('Невірний ID');
 
-    const searchUrl = `https://www.y2mate.com/mates/analyzeV2/ajax`;
-    const searchResponse = await fetch(searchUrl, {
+    const apiUrl = `https://savetube.me/api/v1/telemix/${videoId}`;
+    
+    const response = await fetch(apiUrl);
+    const result = await response.json();
+
+    if (result.status && result.formats) {
+      // Шукаємо найкращий формат (360p або 480p)
+      const format = result.formats.find(f => 
+        f.quality === '360p' || f.quality === '480p' || f.quality === '240p'
+      ) || result.formats[0];
+
+      if (format?.url) {
+        return { success: true, videoUrl: format.url };
+      }
+    }
+  } catch (error) {
+    console.log('YouTube SaveTube помилка:', error.message);
+  }
+
+  // Метод 2: Y2Mate (backup)
+  try {
+    console.log('🔄 YouTube метод 2: Y2Mate...');
+    const videoId = url.match(/(?:v=|\/)([\w-]{11})/)?.[1];
+
+    const response = await fetch('https://www.y2mate.com/mates/analyzeV2/ajax', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: `k_query=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&k_page=home&hl=en&q_auto=0`
     });
 
-    const searchResult = await searchResponse.json();
+    const result = await response.json();
     
-    if (searchResult.status === 'ok' && searchResult.links?.mp4) {
-      const formats = searchResult.links.mp4;
+    if (result.status === 'ok' && result.links?.mp4) {
+      const formats = result.links.mp4;
       const quality = Object.keys(formats).find(q => q.includes('360')) || Object.keys(formats)[0];
-      const format = formats[quality];
-
-      if (format?.k) {
-        const convertUrl = 'https://www.y2mate.com/mates/convertV2/index';
-        const convertResponse = await fetch(convertUrl, {
+      
+      if (formats[quality]?.k) {
+        const convertResponse = await fetch('https://www.y2mate.com/mates/convertV2/index', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: `vid=${videoId}&k=${format.k}`
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `vid=${videoId}&k=${formats[quality].k}`
         });
 
         const convertResult = await convertResponse.json();
         
-        if (convertResult.status === 'ok' && convertResult.dlink) {
+        if (convertResult.dlink) {
           return { success: true, videoUrl: convertResult.dlink };
         }
       }
@@ -162,30 +178,18 @@ async function downloadYouTube(url) {
     console.log('YouTube Y2Mate помилка:', error.message);
   }
 
-  // Метод 3: SaveFrom
-  try {
-    console.log('🔄 YouTube метод 3: SaveFrom...');
-    const videoId = url.match(/(?:v=|\/)([\w-]{11})/)?.[1];
-    const apiUrl = `https://cdn58.savetube.me/info?url=https://www.youtube.com/watch?v=${videoId}`;
-    
-    const response = await fetch(apiUrl);
-    const result = await response.json();
-
-    if (result.data?.video_formats) {
-      // Шукаємо формат 360p або нижчий
-      const format = result.data.video_formats.find(f => 
-        f.label?.includes('360') || f.label?.includes('240')
-      ) || result.data.video_formats[0];
-
-      if (format?.url) {
-        return { success: true, videoUrl: format.url };
-      }
-    }
-  } catch (error) {
-    console.log('YouTube SaveFrom помилка:', error.message);
-  }
-
-  return { success: false, error: 'YouTube: Всі методи не спрацювали. Це може бути Shorts або вікове обмеження.' };
+  return { 
+    success: false, 
+    error: '❌ Не вдалося завантажити YouTube відео.\n\n' +
+           '🚫 Можливі причини:\n' +
+           '• Вікове обмеження (18+)\n' +
+           '• Занадто довге відео (>10 хв)\n' +
+           '• Приватне або видалене\n' +
+           '• YouTube Shorts (не підтримується)\n\n' +
+           '✅ Працює краще з:\n' +
+           '• Короткими відео (2-5 хв)\n' +
+           '• Публічними відео без обмежень'
+  };
 }
 
 // --- РЕЗЕРВНИЙ МЕТОД: TIKWM ДЛЯ TIKTOK ---
@@ -265,11 +269,16 @@ app.post('/download', async (req, res) => {
     try {
       await bot.telegram.sendMessage(
         chatId,
-        `❌ Помилка: ${error.message}\n\n` +
-        '💡 Поради:\n' +
+        error.message || 
+        '❌ Не вдалося завантажити.\n\n' +
+        '💡 **Поради:**\n' +
         '• Перевір посилання\n' +
         '• Акаунт має бути публічним\n' +
-        '• Відео не має бути видаленим'
+        '• Відео не видалене\n\n' +
+        '⚠️ **YouTube:**\n' +
+        '• Shorts НЕ працює (використовуй TikTok)\n' +
+        '• Відео 18+ НЕ працює\n' +
+        '• Краще короткі відео (до 10 хв)'
       );
     } catch (e) {}
 
